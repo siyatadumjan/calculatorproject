@@ -1,24 +1,15 @@
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: CalculatorView(),
-  ));
-}
+class CalculatorScreen extends StatefulWidget {
+  const CalculatorScreen({super.key});
 
-class CalculatorView extends StatefulWidget {
   @override
-  State<CalculatorView> createState() => _CalculatorViewState();
+  State<CalculatorScreen> createState() => _CalculatorScreenState();
 }
 
-class _CalculatorViewState extends State<CalculatorView> {
-  final TextEditingController _textController = TextEditingController();
-  double first = 0;
-  double second = 0;
-  String result = "0";
-  String operator = "";
-  final List<String> buttons = [
+class _CalculatorScreenState extends State<CalculatorScreen> {
+  final _textController = TextEditingController();
+  List<String> lstSymbols = [
     "C",
     "*",
     "/",
@@ -38,119 +29,117 @@ class _CalculatorViewState extends State<CalculatorView> {
     "%",
     "0",
     ".",
-    "="
+    "=",
   ];
 
-  // This function is called when a button is pressed
-  void _onButtonPressed(String value) {
+  final _key = GlobalKey<FormState>();
+  String operator = '';
+  double first = 0;
+  double second = 0;
+
+  void onButtonPressed(String value) {
     setState(() {
       if (value == "C") {
-        // Clear everything
-        _textController.text = "";
-        result = "0";
+        _textController.clear();
         first = 0;
         second = 0;
-        operator = "";
-      } else if (value == "←") {
-        // Backspace: remove last character
-        if (_textController.text.isNotEmpty) {
-          _textController.text = _textController.text
-              .substring(0, _textController.text.length - 1);
-        }
+        operator = '';
+      } else if (value == "<-") {
+        _textController.text =
+            _textController.text.substring(0, _textController.text.length - 1);
       } else if (value == "=") {
-        // Perform calculation
-        second = double.tryParse(_textController.text) ?? 0;
-        switch (operator) {
-          case "+":
-            result = (first + second).toString();
-            break;
-          case "-":
-            result = (first - second).toString();
-            break;
-          case "*":
-            result = (first * second).toString();
-            break;
-          case "/":
-            if (second != 0) {
-              result = (first / second).toString();
-            } else {
-              result = "Error";
-            }
-            break;
-          case "%":
-            result = (first % second).toString();
-            break;
-          default:
-            result = _textController.text;
+        try {
+          second = double.tryParse(_textController.text) ?? 0;
+          _textController.text =
+              _evaluateExpression(first, second, operator).toString();
+          first = double.tryParse(_textController.text) ?? 0;
+          operator = '';
+        } catch (e) {
+          _textController.text = "Error";
         }
-        _textController.text = result;
-        first = 0;
-        second = 0;
-        operator = "";
-      } else if (["+", "-", "*", "/", "%"].contains(value)) {
-        // Store the first number and operator
+      } else if (value == "+" ||
+          value == "-" ||
+          value == "*" ||
+          value == "/" ||
+          value == "%") {
         first = double.tryParse(_textController.text) ?? 0;
         operator = value;
-        _textController.text = "";
+        _textController.clear();
       } else {
-        // Append value to the display (number or decimal point)
         _textController.text += value;
       }
     });
+  }
+
+  double _evaluateExpression(double first, double second, String operation) {
+    switch (operation) {
+      case "+":
+        return first + second;
+      case "-":
+        return first - second;
+      case "*":
+        return first * second;
+      case "/":
+        return second / first;
+      case "%":
+        return second % first;
+      default:
+        return second;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Calculator"),
+        title: const Text('Calculator App'),
       ),
-      body: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.all(12),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Form(
+          key: _key,
           child: Column(
             children: [
-              // Display Text Field
               TextFormField(
+                textDirection: TextDirection.rtl,
                 controller: _textController,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                 ),
-                textAlign: TextAlign.right,
-                style: const TextStyle(fontSize: 30),
-                readOnly: true,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              const SizedBox(height: 20),
-              // Calculator Button Grid
+              const SizedBox(
+                height: 8,
+              ),
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: GridView.builder(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                    ),
-                    itemCount: buttons.length,
-                    itemBuilder: (context, index) {
-                      return ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue[100],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                        ),
-                        child: Text(
-                          buttons[index],
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                        onPressed: () {
-                          _onButtonPressed(buttons[index]);
-                        },
-                      );
-                    },
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    crossAxisSpacing: 8.0,
+                    mainAxisSpacing: 8.0,
                   ),
+                  itemCount: lstSymbols.length,
+                  itemBuilder: (context, index) {
+                    return ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.pink[200],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(0),
+                        ),
+                      ),
+                      onPressed: () => onButtonPressed(lstSymbols[index]),
+                      child: Text(
+                        lstSymbols[index],
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
